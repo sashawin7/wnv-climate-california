@@ -1,0 +1,20 @@
+# Data is downloaded by the scripts in src/, so it isn't committed.
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# Generated figures (remove this line to commit figures)
+outputs/figures/*
+!outputs/figures/.gitkeep
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ipynb_checkpoints/
+
+# OS / editor
+.DS_Store
+Thumbs.db

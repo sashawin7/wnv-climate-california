@@ -129,6 +129,8 @@ def test_lags_match_by_date():
     dataset, _ = build(daily, make_wnv())
     by_key = dataset.set_index(["county", "mmwr_year", "mmwr_week"])
 
-    assert ("Kern", 2020, 30) not in by_key.index
+    # The week stays in the output, with its cases, but with no weather.
+    week30 = by_key.loc[("Kern", 2020, 30)]
+    assert week30["n_days"] == 0 and pd.isna(week30["tavg"]) and week30["wnv_cases"] == 9
     assert pd.isna(by_key.loc[("Kern", 2020, 31), "tavg_lag1"])
     assert by_key.loc[("Kern", 2020, 31), "tavg_lag2"] == 25.0

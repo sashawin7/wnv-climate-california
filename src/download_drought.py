@@ -9,7 +9,7 @@ current year is always refetched). Output: data/raw/usdm_ca_county_weekly.csv
 with the API's columns: MapDate, FIPS, County, State, None, D0-D4, ValidStart, ValidEnd.
 
 Run from the project root:
-    python -m src.download_drought                     # START_YEAR to this year
+    python -m src.download_drought                     # DOWNLOAD_START_YEAR to this year
     python -m src.download_drought --start 2010 --end 2012
 """
 
@@ -18,29 +18,36 @@ import io
 from datetime import date
 
 import pandas as pd
-import requests
 
-from src.config import RAW, START_YEAR, USDM_URL
+from src.config import DOWNLOAD_START_YEAR, RAW, USDM_URL
+from src.fetch import get, log_download
 
 CACHE = RAW / "usdm"
 OUT = RAW / "usdm_ca_county_weekly.csv"
+EXPECTED = ["MapDate", "FIPS", "County", "None", "D0", "D1", "D2", "D3", "D4"]
 
 
-def fetch_year(year: int) -> pd.DataFrame:
+def fetch_year(year: int) -> pd.DataFrame | None:
+    """One year of weekly maps for every California county, or None if there are none yet."""
     params = {
         "aoi": "CA",  # a state abbreviation returns every county in the state
         "startdate": f"1/1/{year}",
         "enddate": f"12/31/{year}",
-        "statisticsType": 1,
+        "statisticsType": 1,  # "traditional": cumulative percents (D1 = D1 or worse)
     }
-    r = requests.get(USDM_URL, params=params, headers={"Accept": "text/csv"}, timeout=180)
-    r.raise_for_status()
-    return pd.read_csv(io.StringIO(r.text), dtype={"FIPS": str, "MapDate": str})
+    r = get(USDM_URL, params=params, headers={"Accept": "text/csv"})
+    log_download("usdm", r.url)
+    if not r.text.strip():  # the API answers an empty 200 when no maps match
+        return None
+    df = pd.read_csv(io.StringIO(r.text), dtype={"FIPS": str, "MapDate": str})
+    if missing := [c for c in EXPECTED if c not in df.columns]:
+        raise SystemExit(f"Drought Monitor response for {year} lacks {missing}: {r.text[:200]!r}")
+    return df
 
 
 def main() -> None:
     p = argparse.ArgumentParser()
-    p.add_argument("--start", type=int, default=START_YEAR)
+    p.add_argument("--start", type=int, default=DOWNLOAD_START_YEAR)
     p.add_argument("--end", type=int, default=date.today().year)
     args = p.parse_args()
 
@@ -51,6 +58,9 @@ def main() -> None:
         if path.exists() and year < this_year:
             continue
         df = fetch_year(year)
+        if df is None:
+            print(f"{year}: no maps yet, skipping")
+            continue
         df.to_csv(path, index=False)
         print(f"{year}: {df['MapDate'].nunique()} weekly maps, {df['FIPS'].nunique()} counties")
 

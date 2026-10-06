@@ -3,32 +3,40 @@
 Steps
 1. Group daily county weather (NOAA nClimGrid) into MMWR weeks (Sunday-Saturday):
    mean temperatures, summed precipitation, and the number of days observed.
-   This sets the county-weeks in the output.
-2. Load the CDPH WNV file. It lists only county-weeks with at least one case, and
+2. Lay out one row per county per MMWR week, from the first weather week to the end
+   of the analysis period, so a week missing from a source shows up as blanks
+   instead of a missing row.
+3. Load the CDPH WNV file. It lists only county-weeks with at least one case, and
    has a few duplicate rows, which are summed. Any county-week missing from it
    gets 0 cases.
-3. If downloaded, add:
+4. If downloaded, add:
    - gridMET humidity and VPD, averaged over each MMWR week
    - US Drought Monitor percentages from the map dated inside each MMWR week
      (maps come out on Tuesdays, and every MMWR week has exactly one Tuesday)
-   - Census population for the MMWR year, plus incidence per 100,000 and
-     log(population) for use as a model offset
-4. Add lagged columns, since cases are counted by week *reported*, which comes weeks
+5. Add lagged columns, since cases are counted by week *reported*, which comes weeks
    after infection. Lags are matched by date (week_start minus 7*k days), so a
    missing week gives a missing lag rather than shifting everything after it.
+   Lags are computed before the output is cut to the analysis period, so weather
+   downloaded before START_YEAR fills the lags of its first weeks.
+6. Keep only the analysis period: START_YEAR week 1 through the latest week in the
+   CDPH file. Weeks after CDPH's latest report aren't known to have zero cases.
+7. If downloaded, add Census population for the MMWR year, plus incidence per
+   100,000 and log(population) for use as a model offset.
 
-WNV rows that don't match a weather week (e.g. week 53 in a year without an MMWR
-week 53) are written to data/processed/wnv_unmatched_rows.csv rather than dropped
-silently.
+WNV rows that don't match a county-week (e.g. week 53 in a year without an MMWR
+week 53, or a county name that isn't one of the 58) are written to
+data/processed/wnv_unmatched_rows.csv rather than dropped silently.
 
 Run from the project root:  python -m src.build_dataset
 """
 
+import warnings
+
 import numpy as np
 import pandas as pd
-from epiweeks import Week
+from epiweeks import Week, Year
 
-from src.config import PROCESSED, RAW
+from src.config import CA_COUNTIES, PROCESSED, RAW, START_YEAR
 
 WEATHER_IN = RAW / "nclimgrid_ca_county_daily.csv"
 WNV_IN = RAW / "wnv_human_cases.csv"
@@ -46,7 +54,19 @@ LAGS = [1, 2, 3, 4, 6, 8]
 
 
 def county_key(s: pd.Series) -> pd.Series:
-    return s.astype(str).str.replace(r"\s+County$", "", regex=True).str.strip().str.title()
+    """'CA: Kern County', 'Kern County' and 'kern' all become 'Kern'."""
+    return (
+        s.astype(str)
+        .str.replace(r"^[A-Za-z]{2}:\s*", "", regex=True)
+        .str.replace(r"\s+County$", "", regex=True)
+        .str.strip()
+        .str.title()
+    )
+
+
+def unknown_counties(counties: pd.Series) -> list[str]:
+    """Names that aren't one of the 58 California counties."""
+    return sorted(set(counties.dropna()) - set(CA_COUNTIES))
 
 
 def add_mmwr(df: pd.DataFrame, date_col: str = "date") -> pd.DataFrame:
@@ -58,23 +78,31 @@ def add_mmwr(df: pd.DataFrame, date_col: str = "date") -> pd.DataFrame:
     return df
 
 
+def week_start(year: int, week: int) -> pd.Timestamp:
+    return pd.Timestamp(Week(year, week).startdate())
+
+
 def weekly_weather(daily: pd.DataFrame) -> pd.DataFrame:
     daily = add_mmwr(daily.assign(county=county_key(daily["county"])))
-    agg = {
-        "week_start": ("date", "min"),
-        "n_days": ("date", "count"),
-        "tmax": ("tmax", "mean"),
-        "tmin": ("tmin", "mean"),
-        "tavg": ("tavg", "mean"),
-        "prcp_total": ("prcp", "sum"),
-    }
-    group_keys = KEYS + (["fips"] if "fips" in daily.columns else [])
-    weekly = daily.groupby(group_keys, as_index=False).agg(**agg)
-    # Label each week by its Sunday, even when the data starts midweek.
-    weekly["week_start"] = weekly.apply(
-        lambda r: pd.Timestamp(Week(r["mmwr_year"], r["mmwr_week"]).startdate()), axis=1
+    weekly = daily.groupby(KEYS, as_index=False).agg(
+        n_days=("date", "count"),
+        tmax=("tmax", "mean"),
+        tmin=("tmin", "mean"),
+        tavg=("tavg", "mean"),
+        prcp_total=("prcp", "sum"),
+        n_prcp_days=("prcp", "count"),
     )
-    return weekly
+    # A week with no precipitation values is unknown, not 0 mm.
+    weekly.loc[weekly["n_prcp_days"] == 0, "prcp_total"] = np.nan
+    return weekly.drop(columns="n_prcp_days")
+
+
+def week_grid(counties, first: pd.Timestamp, last: pd.Timestamp) -> pd.DataFrame:
+    """One row per county per MMWR week whose Sunday falls between first and last."""
+    weeks = add_mmwr(pd.DataFrame({"week_start": pd.date_range(first, last, freq="7D")}),
+                     "week_start")
+    grid = pd.DataFrame({"county": sorted(counties)}).merge(weeks, how="cross")
+    return grid[["county", "mmwr_year", "mmwr_week", "week_start"]]
 
 
 def weekly_gridmet(daily: pd.DataFrame) -> pd.DataFrame:
@@ -85,9 +113,11 @@ def weekly_gridmet(daily: pd.DataFrame) -> pd.DataFrame:
 def weekly_drought(usdm: pd.DataFrame) -> pd.DataFrame:
     """Drought Monitor rows -> one row per county-week.
 
-    The API's "traditional" statistics may be cumulative (D1 = percent in D1 or worse)
-    or categorical (D1 = percent in D1 only). Categorical rows add up to 100 across
-    None and D0-D4; this checks which form arrived and converts so the output has both:
+    The API's "traditional" statistics come cumulative (D1 = percent in D1 or worse),
+    but categorical rows (D1 = percent in D1 only) are handled too, row by row.
+    A categorical row adds up to 100 across None and D0-D4; a cumulative row adds
+    up to 100 plus D1-D4, so it only adds up to 100 when D1-D4 are 0, and then
+    both readings agree. The output has both forms:
       usdm_d0 ... usdm_d4   percent of area in exactly that category
       usdm_d1plus           percent of area in drought (D1 or worse)
       usdm_dsci             Drought Severity and Coverage Index, 0-500
@@ -97,14 +127,15 @@ def weekly_drought(usdm: pd.DataFrame) -> pd.DataFrame:
     df.columns = [c.strip().lower() for c in df.columns]
     cats = df[USDM_CATS].astype(float)
     row_total = df["none"].astype(float) + cats.sum(axis=1)
-    categorical = np.allclose(row_total, 100, atol=0.5)
+    categorical = (row_total - 100).abs() <= 0.05  # values have two decimals
 
-    if categorical:
-        exact = cats
-        cumulative = cats.iloc[:, ::-1].cumsum(axis=1).iloc[:, ::-1]
-    else:
-        cumulative = cats
-        exact = cats - cats.shift(-1, axis=1).fillna(0)
+    non_increasing = (cats.diff(axis=1).iloc[:, 1:] <= 0.005).all(axis=1)
+    if bad := int((~categorical & ~non_increasing).sum()):
+        warnings.warn(f"{bad} Drought Monitor rows are neither categorical nor cumulative")
+
+    exact = cats.where(categorical, cats - cats.shift(-1, axis=1).fillna(0), axis=0)
+    cumulative = cats.where(~categorical, cats.iloc[:, ::-1].cumsum(axis=1).iloc[:, ::-1],
+                            axis=0)
 
     out = pd.DataFrame({
         "county": county_key(df["county"]),
@@ -135,9 +166,20 @@ def population_by_year(pop: pd.DataFrame, years: pd.Series) -> pd.DataFrame:
 def load_wnv(path) -> pd.DataFrame:
     wnv = pd.read_csv(path)
     wnv.columns = [c.strip().lower() for c in wnv.columns]
-    case_col = next(c for c in wnv.columns if "case" in c)
-    wnv = wnv.rename(columns={"year": "mmwr_year", "week": "mmwr_week", case_col: "wnv_cases"})
+    case_cols = [c for c in wnv.columns if "case" in c]
+    if len(case_cols) != 1:
+        raise ValueError(f"Expected one case-count column in {path}, found {case_cols}")
+    wnv = wnv.rename(columns={
+        "year": "mmwr_year", "week": "mmwr_week", "week reported": "mmwr_week",
+        case_cols[0]: "wnv_cases",
+    })
     return wnv[KEYS + ["wnv_cases"]]
+
+
+def latest_wnv_week(wnv: pd.DataFrame) -> Week:
+    """The latest real MMWR week in the WNV file (ignoring e.g. week 53 of a 52-week year)."""
+    pairs = sorted(set(zip(wnv["mmwr_year"], wnv["mmwr_week"])), reverse=True)
+    return next(Week(int(y), int(w)) for y, w in pairs if w <= Year(int(y)).totalweeks())
 
 
 def add_lags(df: pd.DataFrame) -> pd.DataFrame:
@@ -159,27 +201,55 @@ def build(
     gridmet: pd.DataFrame | None = None,
     drought: pd.DataFrame | None = None,
     pop: pd.DataFrame | None = None,
+    period: tuple[Week, Week] | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Join everything into one row per county-week.
+
+    period: first and last MMWR week to keep. Without it, the output spans the
+    weather data. Rows run from the first weather week regardless, so lags can
+    reach back before the period's start.
+    """
     weekly = weekly_weather(daily)
+    weeks = weekly[["mmwr_year", "mmwr_week"]].drop_duplicates()
+    sundays = [week_start(y, w) for y, w in zip(weeks["mmwr_year"], weeks["mmwr_week"])]
+    start, end = min(sundays), max(sundays)
+    if period is not None:
+        start = min(start, pd.Timestamp(period[0].startdate()))
+        end = pd.Timestamp(period[1].startdate())
+
+    merged = week_grid(weekly["county"].unique(), start, end)
+    merged.insert(1, "fips", merged["county"].map(CA_COUNTIES))
+    merged = merged.merge(weekly, on=KEYS, how="left")
+    merged["n_days"] = merged["n_days"].fillna(0).astype(int)
 
     wnv = wnv.assign(county=county_key(wnv["county"]))
     wnv = wnv.groupby(KEYS, as_index=False)["wnv_cases"].sum()  # merge duplicate rows
-    merged = weekly.merge(wnv, on=KEYS, how="left")
+    merged = merged.merge(wnv, on=KEYS, how="left")
     merged["wnv_cases"] = merged["wnv_cases"].fillna(0).astype(int)
 
     if gridmet is not None:
         merged = merged.merge(weekly_gridmet(gridmet), on=KEYS, how="left")
     if drought is not None:
         merged = merged.merge(weekly_drought(drought), on=KEYS, how="left")
+    if merged.duplicated(KEYS).any():
+        raise ValueError("Some county-weeks appear more than once after joining the sources")
+
+    matched = wnv.merge(merged[KEYS], on=KEYS, how="left", indicator=True)
+    unmatched = matched.loc[matched["_merge"] == "left_only", KEYS + ["wnv_cases"]]
+
+    merged = add_lags(merged)
+    if period is not None:
+        merged = merged[merged["week_start"] >= pd.Timestamp(period[0].startdate())]
+        merged = merged.reset_index(drop=True)
+
     if pop is not None:
         p = population_by_year(pop, merged["mmwr_year"])
         merged = merged.merge(p, on=["county", "mmwr_year"], how="left")
         merged["incidence_per_100k"] = merged["wnv_cases"] / merged["population"] * 1e5
         merged["log_pop"] = np.log(merged["population"])
-
-    matched = wnv.merge(weekly[KEYS], on=KEYS, how="left", indicator=True)
-    unmatched = matched.loc[matched["_merge"] == "left_only", KEYS + ["wnv_cases"]]
-    return add_lags(merged), unmatched
+        merged = merged[[c for c in merged.columns if "_lag" not in c]
+                        + [c for c in merged.columns if "_lag" in c]]
+    return merged, unmatched
 
 
 def read_optional(path, **kwargs) -> pd.DataFrame | None:
@@ -189,26 +259,44 @@ def read_optional(path, **kwargs) -> pd.DataFrame | None:
     return None
 
 
+def report_coverage(dataset: pd.DataFrame) -> None:
+    """Say which counties lack each source entirely, and how many county-weeks are blank."""
+    for col, label in [("tavg", "weather"), ("rmax", "gridMET"), ("usdm_dsci", "drought"),
+                       ("population", "population")]:
+        if col not in dataset.columns:
+            continue
+        blank = dataset[col].isna()
+        none = sorted(set(dataset["county"]) - set(dataset.loc[~blank, "county"]))
+        if blank.any():
+            print(f"Note: {blank.mean():.1%} of county-weeks have no {label} data"
+                  + (f"; none at all for {none}" if none else ""))
+    if missing := sorted(set(CA_COUNTIES) - set(dataset["county"])):
+        print(f"Warning: counties missing from the output: {missing}")
+
+
 def main() -> None:
-    daily = pd.read_csv(WEATHER_IN)
+    daily = pd.read_csv(WEATHER_IN, dtype={"fips": str})
     wnv = load_wnv(WNV_IN)
-    gridmet = read_optional(GRIDMET_IN)
+    gridmet = read_optional(GRIDMET_IN, dtype={"fips": str})
     drought = read_optional(DROUGHT_IN, dtype={"FIPS": str, "MapDate": str})
-    pop = read_optional(POP_IN)
-    dataset, unmatched = build(daily, wnv, gridmet, drought, pop)
+    pop = read_optional(POP_IN, dtype={"fips": str})
+
+    for label, df, col in [("weather", daily, "county"), ("WNV", wnv, "county"),
+                           ("gridMET", gridmet, "county"), ("drought", drought, "County"),
+                           ("population", pop, "county")]:
+        if df is not None and (bad := unknown_counties(county_key(df[col]))):
+            print(f"Warning: {label} has county names that aren't California counties: {bad}")
+
+    period = (Week(START_YEAR, 1), latest_wnv_week(wnv))
+    dataset, unmatched = build(daily, wnv, gridmet, drought, pop, period)
 
     PROCESSED.mkdir(parents=True, exist_ok=True)
     dataset.to_csv(OUT, index=False)
     print(f"Wrote {OUT.name}: {len(dataset):,} county-weeks, "
-          f"{dataset['county'].nunique()} counties, "
-          f"{dataset['wnv_cases'].sum():,} cases")
+          f"{dataset['county'].nunique()} counties, {dataset['wnv_cases'].sum():,} cases, "
+          f"MMWR {period[0]} to {period[1]}")
 
-    for col, label in [("rmax", "gridMET"), ("usdm_dsci", "drought"), ("population", "population")]:
-        if col in dataset.columns:
-            missing = dataset[col].isna().mean()
-            if missing > 0.01:
-                print(f"Note: {missing:.1%} of county-weeks have no {label} data. "
-                      f"Check that county names match and the years overlap.")
+    report_coverage(dataset)
     if "pop_carried_forward" in dataset.columns and dataset["pop_carried_forward"].any():
         years = sorted(int(y) for y in dataset.loc[dataset["pop_carried_forward"], "mmwr_year"].unique())
         print(f"Note: population for {years} reuses the latest Census estimate.")
@@ -216,7 +304,7 @@ def main() -> None:
     if len(unmatched):
         unmatched.to_csv(UNMATCHED_OUT, index=False)
         print(f"Warning: {unmatched['wnv_cases'].sum():,} cases in {len(unmatched)} WNV rows "
-              f"had no matching weather week. See {UNMATCHED_OUT.name}.")
+              f"had no matching county-week. See {UNMATCHED_OUT.name}.")
 
 
 if __name__ == "__main__":

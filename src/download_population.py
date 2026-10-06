@@ -11,9 +11,9 @@ import io
 import re
 
 import pandas as pd
-import requests
 
 from src.config import CA_FIPS, CENSUS_POP_URLS, RAW
+from src.fetch import get, log_download
 
 OUT = RAW / "ca_county_population.csv"
 POP_COL = re.compile(r"^POPESTIMATE(\d{4})$")
@@ -57,8 +57,8 @@ def main() -> None:
     RAW.mkdir(parents=True, exist_ok=True)
     tables = []
     for url in CENSUS_POP_URLS:
-        r = requests.get(url, timeout=120)
-        r.raise_for_status()
+        r = get(url, timeout=120)
+        log_download("census_population", url)
         vintage = url.rsplit("/", 1)[-1].removesuffix(".csv")
         raw = pd.read_csv(io.BytesIO(r.content), encoding="latin-1", dtype=str)
         tables.append(tidy_census(raw, vintage))

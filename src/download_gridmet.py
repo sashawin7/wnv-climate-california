@@ -1,29 +1,39 @@
 """Download daily gridMET humidity and VPD and average them to California counties.
 
-gridMET is a ~4 km daily grid. For each year, this fetches the grid over California
-with PyGridMET, assigns every grid cell to the county that contains its center, and
-averages the cells in each county. Each year is cached in data/raw/gridmet/ as a
-small CSV, so a rerun only fetches missing years (the current year is always
-refetched, since it's still growing).
+gridMET is a ~4 km daily grid. For each year and variable, this requests the grid over
+California's bounding box from the gridMET THREDDS server, assigns every grid cell to
+the county that contains its center, and averages the cells in each county. Each year
+is cached in data/raw/gridmet/ as a small CSV, so a rerun only fetches missing years
+(the current year is always refetched, since it's still growing).
+
+The server is called directly rather than through PyGridMET, which treats any blank
+cell as a failed download, and the bounding box always includes blank ocean cells.
 
 Variables (see config.GRIDMET_VARS): rmax, rmin (%), sph (kg/kg), vpd (kPa).
 Output: data/raw/gridmet_ca_county_daily.csv with columns date, county, fips, rmax, rmin, sph, vpd.
 
 Run from the project root:
-    python -m src.download_gridmet                     # START_YEAR to this year
+    python -m src.download_gridmet                     # DOWNLOAD_START_YEAR to this year
     python -m src.download_gridmet --start 2010 --end 2012
 
-A year of four variables over California is a few hundred MB while it's processed.
+Each request is one variable for one year, about 40 MB.
 """
 
 import argparse
+import os
+import tempfile
 from datetime import date
 
 import geopandas as gpd
 import numpy as np
 import pandas as pd
+import xarray as xr
 
-from src.config import CA_FIPS, COUNTY_SHAPES_URL, GRIDMET_VARS, RAW, START_YEAR
+from src.config import (
+    CA_FIPS, COUNTY_SHAPES_URL, DOWNLOAD_START_YEAR, GRIDMET_NCSS, GRIDMET_NAMES,
+    GRIDMET_VARS, RAW,
+)
+from src.fetch import get, log_download
 
 CACHE = RAW / "gridmet"
 SHAPES = RAW / "ca_counties.gpkg"
@@ -72,27 +82,53 @@ def county_means(ds, counties: gpd.GeoDataFrame, variables: list[str]) -> pd.Dat
         cells = idx == i
         out = {"date": times, "county": row["county"], "fips": row["fips"]}
         for v in variables:
-            arr = ds[v].values.reshape(len(times), -1)[:, cells]
+            arr = ds[v].transpose("time", "lat", "lon").values.reshape(len(times), -1)[:, cells]
             with np.errstate(all="ignore"):
                 out[v] = np.nanmean(arr, axis=1)
         frames.append(pd.DataFrame(out))
     return pd.concat(frames, ignore_index=True)
 
 
-def fetch_year(year: int, counties: gpd.GeoDataFrame) -> pd.DataFrame:
-    import pygridmet  # imported here so the tests don't need it
+def fetch_var(var: str, year: int, bounds, last: date) -> xr.Dataset:
+    """One variable for one year over a lon/lat bounding box, as a (time, lat, lon) dataset."""
+    west, south, east, north = bounds
+    url = f"{GRIDMET_NCSS}/agg_met_{var}_1979_CurrentYear_CONUS.nc"
+    params = {
+        "var": GRIDMET_NAMES[var],
+        "north": f"{north:.4f}", "west": f"{west:.4f}",
+        "east": f"{east:.4f}", "south": f"{south:.4f}",
+        "disableProjSubset": "on", "horizStride": 1, "timeStride": 1,
+        "time_start": f"{year}-01-01T00:00:00Z", "time_end": f"{last.isoformat()}T00:00:00Z",
+        "addLatLon": "true", "accept": "netcdf",
+    }
+    r = get(url, params=params, timeout=600)
+    log_download("gridmet", r.url)
+    fd, path = tempfile.mkstemp(suffix=".nc", dir=CACHE)
+    try:
+        with os.fdopen(fd, "wb") as f:
+            f.write(r.content)
+        with xr.open_dataset(path, engine="netcdf4") as opened:
+            ds = opened.load()
+    finally:
+        os.remove(path)
+    return ds.rename({GRIDMET_NAMES[var]: var, "day": "time"})[[var]].astype("float32")
 
-    ca_shape = counties.union_all()
-    end = min(date(year, 12, 31), date.today())
-    ds = pygridmet.get_bygeom(
-        ca_shape, (f"{year}-01-01", end.isoformat()), variables=GRIDMET_VARS
-    )
-    return county_means(ds, counties, GRIDMET_VARS)
+
+def fetch_year(year: int, counties: gpd.GeoDataFrame) -> pd.DataFrame:
+    last = min(date(year, 12, 31), date.today())
+    west, south, east, north = counties.total_bounds
+    bounds = (west - 0.05, south - 0.05, east + 0.05, north + 0.05)
+    frames = [
+        county_means(fetch_var(v, year, bounds, last), counties, [v])
+        .set_index(["date", "county", "fips"])
+        for v in GRIDMET_VARS
+    ]
+    return pd.concat(frames, axis=1).reset_index()
 
 
 def main() -> None:
     p = argparse.ArgumentParser()
-    p.add_argument("--start", type=int, default=START_YEAR)
+    p.add_argument("--start", type=int, default=DOWNLOAD_START_YEAR)
     p.add_argument("--end", type=int, default=date.today().year)
     args = p.parse_args()
 

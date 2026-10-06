@@ -87,6 +87,9 @@ Output: `data/processed/ca_wnv_weather_weekly.csv`
 
 ## Caveats
 
+For the full list of known and suspected errors to check, see
+[docs/REVIEW_CHECKLIST.md](docs/REVIEW_CHECKLIST.md).
+
 - **Week reported, not onset.** CDPH counts cases by the week they were reported, which lags
   infection by weeks. Test lagged weather rather than same-week weather only.
 - **County of residence.** Cases are assigned to where the patient lives, not where they were bitten.

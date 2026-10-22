@@ -95,7 +95,8 @@ Output: `data/processed/ca_wnv_weather_weekly.csv`
 
 For the full list of known and suspected errors to check, see
 [docs/REVIEW_CHECKLIST.md](docs/REVIEW_CHECKLIST.md). Questions about the data and decisions
-about the analysis that are still open are in [docs/OPEN_QUESTIONS.md](docs/OPEN_QUESTIONS.md).
+about the analysis that are still open, and the dataset's known limitations, are in
+[docs/OPEN_QUESTIONS.md](docs/OPEN_QUESTIONS.md), each with ideas for how to resolve it.
 
 - **Week reported, not onset.** CDPH counts cases by the week they were reported, which lags
   infection by weeks. Test lagged weather rather than same-week weather only.

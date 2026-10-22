@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.10.18">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>open_questions</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="OPEN_QUESTIONS_files/libs/clipboard/clipboard.min.js"></script>
+<script src="OPEN_QUESTIONS_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="OPEN_QUESTIONS_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="OPEN_QUESTIONS_files/libs/quarto-html/popper.min.js"></script>
+<script src="OPEN_QUESTIONS_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="OPEN_QUESTIONS_files/libs/quarto-html/anchor.min.js"></script>
+<link href="OPEN_QUESTIONS_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="OPEN_QUESTIONS_files/libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="OPEN_QUESTIONS_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="OPEN_QUESTIONS_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="OPEN_QUESTIONS_files/libs/bootstrap/bootstrap-215b371544c282197b31c8aa00ce3677.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body class="fullcontent quarto-light">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+
+
+
+<section id="open-questions-issues-and-limitations" class="level1">
+<h1>Open Questions, Issues and Limitations</h1>
+<p>Everything known to be uncertain, undecided or limited about the dataset, with ideas for what to do about each. Code errors that have been fixed are in <a href="REVIEW_CHECKLIST.md">REVIEW_CHECKLIST.md</a>, not here. The walkthrough notebook <a href="../notebooks/01_data_pipeline_explained.ipynb">notebooks/01_data_pipeline_explained.ipynb</a> shows most of these issues in the real data.</p>
+<p>Facts about the data were checked in October 2026 (CDPH file updated 2026-10-05).</p>
+<p><strong>How to read an item</strong></p>
+<ul>
+<li><strong>Type</strong>
+<ul>
+<li><strong>Question</strong>: needs facts from documentation or from the data’s publishers.</li>
+<li><strong>Decision</strong>: an analysis choice the team has to make.</li>
+<li><strong>Limitation</strong>: built into the data. It can be reduced or acknowledged, not fully fixed.</li>
+</ul></li>
+<li><strong>Priority</strong> is a suggestion, based on how much the item could change results.
+<ul>
+<li><strong>High</strong>: could change the main findings.</li>
+<li><strong>Medium</strong>: affects some results or some counties.</li>
+<li><strong>Low</strong>: minor, or easy to handle.</li>
+</ul></li>
+<li><strong>Now</strong> is what the pipeline currently does, so a decision can be put into code easily.</li>
+<li><strong>Ways forward</strong> lists concrete next steps, roughly cheapest first.</li>
+</ul>
+<p>The codes A1–B11 are kept from earlier versions (A = question, B = decision) because REVIEW_CHECKLIST.md and the notebook refer to them. Limitations are numbered L1–L8.</p>
+<section id="at-a-glance" class="level2">
+<h2 class="anchored" data-anchor-id="at-a-glance">At a glance</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>ID</th>
+<th>Item</th>
+<th>Type</th>
+<th>Priority</th>
+<th>Status</th>
+<th>First step</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Case data</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>A1</td>
+<td>CDPH weeks may not be MMWR weeks</td>
+<td>Question</td>
+<td>High</td>
+<td>Open</td>
+<td>Compare against CDPH bulletins; ask CDPH</td>
+</tr>
+<tr class="odd">
+<td>A2</td>
+<td>Large year-end (week 52/53) counts</td>
+<td>Question</td>
+<td>High</td>
+<td>Open</td>
+<td>Compare against onset-month counts in CDPH annual reports</td>
+</tr>
+<tr class="even">
+<td>B2</td>
+<td>What to do with year-end catch-up cases</td>
+<td>Decision</td>
+<td>High</td>
+<td>Kept as is</td>
+<td>Depends on A2; try a sensitivity analysis</td>
+</tr>
+<tr class="odd">
+<td>A2b</td>
+<td>Weekly counts look batched</td>
+<td>Question</td>
+<td>Medium</td>
+<td>Open</td>
+<td>Compare weekly vs monthly noise</td>
+</tr>
+<tr class="even">
+<td>A2c</td>
+<td>One duplicated row</td>
+<td>Question</td>
+<td>Low</td>
+<td>Summed</td>
+<td>Ask CDPH along with A1</td>
+</tr>
+<tr class="odd">
+<td>A3</td>
+<td>Cases reported well before the season</td>
+<td>Question</td>
+<td>Low</td>
+<td>Kept</td>
+<td>Check bulletins for those weeks</td>
+</tr>
+<tr class="even">
+<td>A4</td>
+<td>Do yearly totals match CDPH’s published counts?</td>
+<td>Question</td>
+<td>Medium</td>
+<td>Unchecked</td>
+<td>Table of yearly totals vs annual reports</td>
+</tr>
+<tr class="odd">
+<td>A6</td>
+<td>How long until recent weeks are complete?</td>
+<td>Question</td>
+<td>Medium</td>
+<td>Open</td>
+<td>Keep dated copies of the CDPH file</td>
+</tr>
+<tr class="even">
+<td>B1</td>
+<td>Where the analysis period ends</td>
+<td>Decision</td>
+<td>Medium</td>
+<td>Partly handled</td>
+<td>Decide after A6</td>
+</tr>
+<tr class="odd">
+<td>L1</td>
+<td>Cases are by county of residence, not exposure</td>
+<td>Limitation</td>
+<td>Medium</td>
+<td>Accepted</td>
+<td>Sensitivity analysis without commuter counties</td>
+</tr>
+<tr class="even">
+<td>L2</td>
+<td>Only reported disease cases: a small, uneven share of infections</td>
+<td>Limitation</td>
+<td>Medium</td>
+<td>Accepted</td>
+<td>Use neuroinvasive cases if available</td>
+</tr>
+<tr class="odd">
+<td><strong>Timing and lags</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>A5</td>
+<td>Is there an onset-date version of the cases?</td>
+<td>Question</td>
+<td>High</td>
+<td>Open</td>
+<td>Data request to CDPH</td>
+</tr>
+<tr class="odd">
+<td>B3</td>
+<td>Which lags of weather and drought to use</td>
+<td>Decision</td>
+<td>High</td>
+<td>1–8 weeks</td>
+<td>Extend lags; try a distributed lag model</td>
+</tr>
+<tr class="even">
+<td>B4</td>
+<td>Weekly or monthly analysis</td>
+<td>Decision</td>
+<td>High</td>
+<td>Weekly</td>
+<td>Build a monthly table and compare</td>
+</tr>
+<tr class="odd">
+<td>B10</td>
+<td>Which week’s drought map goes with which week</td>
+<td>Decision</td>
+<td>Low</td>
+<td>Same week</td>
+<td>Use the previous week’s map</td>
+</tr>
+<tr class="even">
+<td><strong>Weather, humidity and drought</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>B6</td>
+<td>Area-averaged weather vs where people live</td>
+<td>Decision</td>
+<td>Medium</td>
+<td>Area average</td>
+<td>Population-weighted averages</td>
+</tr>
+<tr class="even">
+<td>L3</td>
+<td>gridMET county averages use only cells centered in the county</td>
+<td>Limitation</td>
+<td>Low</td>
+<td>Accepted</td>
+<td>Weight cells by overlap with the county</td>
+</tr>
+<tr class="odd">
+<td>B8</td>
+<td>Partial weeks at the end of the series</td>
+<td>Decision</td>
+<td>Low</td>
+<td>Sums the days present</td>
+<td>Blank weeks with <code>n_days &lt; 7</code></td>
+</tr>
+<tr class="even">
+<td>B9</td>
+<td>Preliminary weather data</td>
+<td>Decision</td>
+<td>Low</td>
+<td>Used</td>
+<td>Flag or drop preliminary weeks</td>
+</tr>
+<tr class="odd">
+<td>L4</td>
+<td>Temperature and humidity come from different gridded products</td>
+<td>Limitation</td>
+<td>Low</td>
+<td>Accepted</td>
+<td>Compare with gridMET temperature</td>
+</tr>
+<tr class="even">
+<td>L5</td>
+<td>The Drought Monitor is a judged, stepwise product</td>
+<td>Limitation</td>
+<td>Low</td>
+<td>Accepted</td>
+<td>Add a measured index (SPI/SPEI)</td>
+</tr>
+<tr class="odd">
+<td><strong>Population</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>B7</td>
+<td>Jump at 2019→2020; yearly steps</td>
+<td>Decision</td>
+<td>Medium</td>
+<td>Accepted</td>
+<td>Build totals from the intercensal file</td>
+</tr>
+<tr class="odd">
+<td>L6</td>
+<td>2026 reuses the 2025 population</td>
+<td>Limitation</td>
+<td>Low</td>
+<td>Flagged</td>
+<td>Update when Vintage 2026 is out</td>
+</tr>
+<tr class="even">
+<td><strong>Scope, model and missing variables</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>B5</td>
+<td>Which weeks of the year and which counties</td>
+<td>Decision</td>
+<td>High</td>
+<td>All of them</td>
+<td>Try a season-only, high-burden version</td>
+</tr>
+<tr class="even">
+<td>B11</td>
+<td>Which statistical model</td>
+<td>Decision</td>
+<td>High</td>
+<td>Not started</td>
+<td>Decide after B4 and B5</td>
+</tr>
+<tr class="odd">
+<td>A7</td>
+<td>Mosquito and bird surveillance (VectorSurv)</td>
+<td>Question</td>
+<td>Medium</td>
+<td>Not added</td>
+<td>Ask about access and terms</td>
+</tr>
+<tr class="even">
+<td>L7</td>
+<td>Important drivers aren’t in the data</td>
+<td>Limitation</td>
+<td>Medium</td>
+<td>Accepted</td>
+<td>Year and county effects; add what’s available</td>
+</tr>
+<tr class="odd">
+<td>L8</td>
+<td>County-level associations, not individual risk</td>
+<td>Limitation</td>
+<td>Medium</td>
+<td>Accepted</td>
+<td>Word conclusions as county-level</td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+<section id="case-data-the-outcome" class="level2">
+<h2 class="anchored" data-anchor-id="case-data-the-outcome">1. Case data (the outcome)</h2>
+<section id="a1-does-cdph-number-its-weeks-the-way-we-assume" class="level3">
+<h3 class="anchored" data-anchor-id="a1-does-cdph-number-its-weeks-the-way-we-assume">A1 · Does CDPH number its weeks the way we assume?</h3>
+<p><code>Question</code> · Priority <strong>High</strong> · <strong>Open</strong></p>
+<p><strong>In short:</strong> The CDPH file has week 53 in years that have no MMWR week 53. That suggests its weeks aren’t plain MMWR weeks, which could put cases up to a week out of line with the weather.</p>
+<p><strong>Details:</strong> - The data dictionary only says “Week reported”. - Week 53 appears in 2010, 2012, 2013, 2017, 2018 and 2019, none of which has an MMWR week 53. That is 38 rows and 91 cases, 52 of them in 2017. - Possible explanations: - (a) Week 53 is a year-end bucket for late or undated reports, and everything else is MMWR. - (b) CDPH counts weeks from January 1, which would shift <em>every</em> case by up to six days. - (c) CDPH uses ISO weeks. This doesn’t fit: ISO 53-week years are 2009, 2015, 2020 and 2026, not the years above.</p>
+<p><strong>Now:</strong> Weeks are read as MMWR weeks. The 38 impossible rows are saved to <code>data/processed/wnv_unmatched_rows.csv</code> and are not in the dataset.</p>
+<p><strong>Why it matters:</strong> Under (a), only 91 cases are affected. Under (b), every case is misaligned by up to a week, which blurs the short lags.</p>
+<p><strong>Ways forward:</strong> - [ ] Pick 3–4 county-weeks with cases and check them against CDPH’s weekly arbovirus bulletins on westnile.ca.gov, which state the dates each report covers. - [ ] Email the CDPH Vector-Borne Disease Section (the dataset contact on the CHHS portal). Ask about week numbering, week 53, the week-52 spikes (A2) and the duplicate row (A2c) in one message. - [ ] If (b) is confirmed, change <code>bd.add_mmwr</code> / <code>load_wnv</code> to map CDPH weeks to dates using CDPH’s rule.</p>
+</section>
+<section id="a2-what-are-the-large-year-end-counts" class="level3">
+<h3 class="anchored" data-anchor-id="a2-what-are-the-large-year-end-counts">A2 · What are the large year-end counts?</h3>
+<p><code>Question</code> · Priority <strong>High</strong> · <strong>Open</strong></p>
+<p><strong>In short:</strong> In some years a fifth to a quarter of all cases are reported in week 52 or 53. These are almost certainly earlier cases being caught up at year end, not December infections.</p>
+<p><strong>Details:</strong> - The share of a year’s cases reported in week 52 or 53 is 18% in 2020, 24% in 2022 and 17% in 2023. In most other years it is 2–9%. - 2020 has a real week 53, which alone holds 39 cases (17% of the year). - In 2022, week 52 holds 50 cases (24%). - Weeks 46–49 also carry a long tail of cases (115 in 2015).</p>
+<p><strong>Why it matters:</strong> These cases get paired with December weather, which pulls any temperature–case association toward zero.</p>
+<p><strong>Ways forward:</strong> - [ ] Compare against CDPH annual reports, which give cases by month of onset. If December onsets are rare, the week-52 cases are catch-up reports. - [ ] Ask CDPH whether week 52 is used to close out the year (same email as A1). - [ ] Then decide B2.</p>
+</section>
+<section id="b2-what-to-do-with-year-end-catch-up-cases" class="level3">
+<h3 class="anchored" data-anchor-id="b2-what-to-do-with-year-end-catch-up-cases">B2 · What to do with year-end catch-up cases</h3>
+<p><code>Decision</code> · Priority <strong>High</strong> · <strong>Kept as is for now</strong></p>
+<p><strong>In short:</strong> Keep, drop, redistribute or aggregate away the week-52/53 excess.</p>
+<p><strong>Now:</strong> Week 52, and week 53 in 2020 (a real 53-week year), are kept as reported. Impossible week-53 rows are set aside (A1).</p>
+<p><strong>Options:</strong> | Option | Pro | Con | |—|—|—| | Keep as reported | Honest to the source | Summer infections paired with winter weather | | Drop weeks 52–53 | Simple | Loses up to 24% of a year’s cases; undercounts those years | | Redistribute each county’s week-52 excess over that season, in proportion to its other weeks | Keeps totals and roughly right timing | An assumption; adds made-up timing | | Analyze monthly or by season (B4) | Problem mostly disappears | Loses weekly detail | | Restrict to transmission season (B5) | Removes the issue with winter weeks | Same loss as dropping |</p>
+<p><strong>Ways forward:</strong> - [ ] Wait for A2’s answer. - [ ] Run the main model with “keep” and with “drop” as a sensitivity check. If results barely change, the choice doesn’t matter much.</p>
+</section>
+<section id="a2b-weekly-counts-look-batched" class="level3">
+<h3 class="anchored" data-anchor-id="a2b-weekly-counts-look-batched">A2b · Weekly counts look batched</h3>
+<p><code>Question</code> · Priority <strong>Medium</strong> · <strong>Open</strong></p>
+<p><strong>In short:</strong> Statewide weekly counts jump around in a way that looks like reports arriving in batches, not like transmission changing.</p>
+<p><strong>Details:</strong> - 2020 weeks 37–41 have 2, 12, 32, 3 and 21 cases statewide. - 2009 week 33 has 0 cases statewide, in the middle of the season.</p>
+<p><strong>Why it matters:</strong> If reports come in batches, a single week’s count carries little signal. Week-to-week models will mostly fit noise.</p>
+<p><strong>Ways forward:</strong> - [ ] Compute the autocorrelation of statewide weekly counts within a season. Strong week-to-week zig-zags suggest batching. - [ ] Compare model fit at weekly, 2-week and monthly resolution (B4). - [ ] Ask CDPH whether some counties report in batches.</p>
+</section>
+<section id="a2c-one-duplicated-row" class="level3">
+<h3 class="anchored" data-anchor-id="a2c-one-duplicated-row">A2c · One duplicated row</h3>
+<p><code>Question</code> · Priority <strong>Low</strong> · <strong>Summed</strong></p>
+<p><strong>In short:</strong> Santa Clara, 2021 week 52 appears twice, with 1 case each. Is that 2 cases, or 1 case listed twice?</p>
+<p><strong>Now:</strong> The pipeline sums the rows (2 cases).</p>
+<p><strong>Ways forward:</strong> - [ ] Ask CDPH (same email as A1). At most it changes the total by one case.</p>
+</section>
+<section id="a3-cases-reported-well-before-the-season" class="level3">
+<h3 class="anchored" data-anchor-id="a3-cases-reported-well-before-the-season">A3 · Cases reported well before the season</h3>
+<p><code>Question</code> · Priority <strong>Low</strong> · <strong>Kept</strong></p>
+<p><strong>In short:</strong> A few cases are reported in late winter or spring, long before transmission normally starts.</p>
+<p><strong>Details:</strong> There are 3 such rows: 2013 week 9 (Sacramento), 2007 week 16 (Kern) and 2017 week 17 (Kings).</p>
+<p><strong>Possible explanations:</strong> late reports of the previous season, infections acquired while travelling, or real early cases.</p>
+<p><strong>Ways forward:</strong> - [ ] Check CDPH bulletins or annual summaries for those weeks. - [ ] If they are travel or late cases, drop them or move them. With only 3 cases, this is low priority.</p>
+</section>
+<section id="a4-do-yearly-totals-match-cdphs-published-counts" class="level3">
+<h3 class="anchored" data-anchor-id="a4-do-yearly-totals-match-cdphs-published-counts">A4 · Do yearly totals match CDPH’s published counts?</h3>
+<p><code>Question</code> · Priority <strong>Medium</strong> · <strong>Not yet checked</strong></p>
+<p><strong>In short:</strong> The file’s yearly totals should match CDPH’s official year-end counts of human disease cases. If they don’t, the file is missing something.</p>
+<p><strong>Details:</strong> - The file’s totals include 801 in 2014, 782 in 2015 and 252 so far in 2026. - Possible gaps: cases with an unknown county, or late revisions. - Asymptomatic blood-donor infections are already known to be excluded.</p>
+<p><strong>Ways forward:</strong> - [ ] Make a table of file totals vs CDPH annual report totals for 2006–2025, and note any differences. - [ ] Also compare against the CDC ArboNET county counts by year (a second, independent source).</p>
+</section>
+<section id="a6-how-long-until-recent-weeks-are-complete" class="level3">
+<h3 class="anchored" data-anchor-id="a6-how-long-until-recent-weeks-are-complete">A6 · How long until recent weeks are complete?</h3>
+<p><code>Question</code> · Priority <strong>Medium</strong> · <strong>Open</strong></p>
+<p><strong>In short:</strong> CDPH keeps adding late reports to recent weeks, so the last few weeks undercount. How many weeks back is the data reliable?</p>
+<p><strong>Details:</strong> The report delay averages about 5 weeks (see A5), so the last 4–8 weeks are probably incomplete.</p>
+<p><strong>Ways forward:</strong> - [ ] Keep a dated copy of each CDPH download. Changing <code>download_wnv.py</code> to also save <code>wnv_human_cases_YYYY-MM-DD.csv</code> would do this automatically. - [ ] After a few downloads, compare the same weeks across copies to see how much they grow and for how long. - [ ] Use the result to set B1.</p>
+</section>
+<section id="b1-where-the-analysis-period-ends" class="level3">
+<h3 class="anchored" data-anchor-id="b1-where-the-analysis-period-ends">B1 · Where the analysis period ends</h3>
+<p><code>Decision</code> · Priority <strong>Medium</strong> · <strong>Partly handled</strong></p>
+<p><strong>In short:</strong> The dataset ends at CDPH’s latest week. The last few weeks are probably incomplete, and the current season is unfinished.</p>
+<p><strong>Now:</strong> It runs from 2006 week 1 through the latest week in the CDPH file (2026 week 39). Weeks after that aren’t filled with false zeros.</p>
+<p><strong>Options:</strong> - Drop the last <em>k</em> weeks, with <em>k</em> taken from A6. - Stop at the last complete season (end of 2025) for the main analysis, and use 2026 only to test predictions.</p>
+<p><strong>Ways forward:</strong> - [ ] Decide after A6. Stopping at 2025 for model fitting is a safe default.</p>
+</section>
+<section id="l1-cases-are-by-county-of-residence-not-of-exposure" class="level3">
+<h3 class="anchored" data-anchor-id="l1-cases-are-by-county-of-residence-not-of-exposure">L1 · Cases are by county of residence, not of exposure</h3>
+<p><code>Limitation</code> · Priority <strong>Medium</strong> · <strong>Accepted</strong></p>
+<p><strong>In short:</strong> Each case is counted where the patient lives, but the infecting bite may have happened in another county (work, commute, travel).</p>
+<p><strong>Why it matters:</strong> It adds noise, mostly in metro areas where many people commute across county lines (Bay Area, Los Angeles–Orange–Riverside–San Bernardino, Sacramento region). The misassignment is probably small in Central Valley counties.</p>
+<p><strong>Ways forward:</strong> - [ ] Note it as a limitation. - [ ] Sensitivity analysis: refit without small counties that sit inside a large commuting region, or group metro counties into regions.</p>
+</section>
+<section id="l2-only-reported-disease-cases-a-small-and-uneven-share-of-infections" class="level3">
+<h3 class="anchored" data-anchor-id="l2-only-reported-disease-cases-a-small-and-uneven-share-of-infections">L2 · Only reported disease cases: a small and uneven share of infections</h3>
+<p><code>Limitation</code> · Priority <strong>Medium</strong> · <strong>Accepted</strong></p>
+<p><strong>In short:</strong> About 80% of WNV infections cause no symptoms, and most mild cases are never tested. The data only see infections that were diagnosed and reported.</p>
+<p><strong>Details:</strong> - Neuroinvasive disease (under 1% of infections) is nearly always detected. - Milder febrile cases are reported much less consistently. - Testing and reporting practices can differ by county and over time. 2020 is a possible example, if COVID-19 changed testing; that is a hypothesis to check.</p>
+<p><strong>Why it matters:</strong> Counts reflect transmission <em>and</em> how hard people looked. Changes in testing can look like changes in risk.</p>
+<p><strong>Ways forward:</strong> - [ ] Ask CDPH whether a neuroinvasive-only series exists. It is more consistently detected and is often the preferred outcome in WNV studies. - [ ] Include year effects in the model to absorb statewide changes in reporting.</p>
+<hr>
+</section>
+</section>
+<section id="timing-and-lags" class="level2">
+<h2 class="anchored" data-anchor-id="timing-and-lags">2. Timing and lags</h2>
+<section id="a5-is-there-an-onset-date-version-of-the-case-data" class="level3">
+<h3 class="anchored" data-anchor-id="a5-is-there-an-onset-date-version-of-the-case-data">A5 · Is there an onset-date version of the case data?</h3>
+<p><code>Question</code> · Priority <strong>High</strong> · <strong>Open</strong></p>
+<p><strong>In short:</strong> Cases are dated by the week they were <em>reported</em>, about 5 weeks after symptoms started, with a delay that varies. Counts by date of onset would remove most of this uncertainty.</p>
+<p><strong>Details:</strong> The 5-week figure comes from <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC11226093/">a 2024 PLOS NTD study of 11 California counties</a> that used CDPH data. The delay also varies, which blurs the timing beyond what lags can fix.</p>
+<p><strong>Ways forward:</strong> - [ ] Data request to CDPH for counts by onset week, or even onset month, by county. - [ ] CDC ArboNET publishes county counts by year only. That is useful for A4 but not for timing. - [ ] If neither is available, describe the delay distribution in the write-up and use lags of 4–8+ weeks (B3).</p>
+</section>
+<section id="b3-which-lags-of-weather-and-drought-to-use" class="level3">
+<h3 class="anchored" data-anchor-id="b3-which-lags-of-weather-and-drought-to-use">B3 · Which lags of weather and drought to use</h3>
+<p><code>Decision</code> · Priority <strong>High</strong> · <strong>Lags of 1, 2, 3, 4, 6 and 8 weeks</strong></p>
+<p><strong>In short:</strong> Weather affects mosquitoes and virus build-up weeks before a bite, and the bite comes weeks before a report. The useful lags may be longer than 8 weeks.</p>
+<p><strong>Details:</strong> The delays add up along the chain: - weather acts on mosquito breeding and virus amplification for several weeks before a bite; - infection to symptom onset takes 2–14 days; - onset to report takes about 5 weeks.</p>
+<p>So the relevant weather may be 6–16 weeks before the report week. Drought may act over even longer periods, through its effects on birds and water sources.</p>
+<p><strong>Now:</strong> <code>LAGS = [1, 2, 3, 4, 6, 8]</code> in <code>src/build_dataset.py</code> for temperature, precipitation, humidity, VPD and DSCI.</p>
+<p><strong>Options:</strong> - Extend <code>LAGS</code> to 12 and 16 weeks. This is a one-line change; drought lags need data back to 2005, which is already downloaded. - Rolling means, e.g.&nbsp;mean temperature over the 4 weeks ending k weeks earlier. These are less noisy than single-week lags. - Degree-days above about 14 °C, roughly the temperature at which the virus replicates in mosquitoes. This is more biologically meaningful than mean temperature. - A distributed lag model (DLNM-style), which estimates the whole lag curve instead of choosing lags in advance.</p>
+<p><strong>Ways forward:</strong> - [ ] Extend lags to 16 weeks and add 4-week rolling means. This is cheap and makes the other options possible. - [ ] Plot the correlation between weekly cases and temperature at each lag (statewide and for a few high-burden counties), to see where the signal peaks.</p>
+</section>
+<section id="b4-weekly-or-monthly-analysis" class="level3">
+<h3 class="anchored" data-anchor-id="b4-weekly-or-monthly-analysis">B4 · Weekly or monthly analysis</h3>
+<p><code>Decision</code> · Priority <strong>High</strong> · <strong>Weekly</strong></p>
+<p><strong>In short:</strong> Weekly data keep more detail, but much of that detail is reporting noise (A2, A2b, A5). Monthly counts are steadier.</p>
+<p><strong>Details:</strong> The 2024 study above used monthly counts “to remove inconsistent lags in reporting”.</p>
+<p><strong>Ways forward:</strong> - [ ] Add a monthly table, built from daily weather and weekly cases (weeks assigned to the month of their Wednesday), alongside the weekly one. - [ ] Fit the same model to both and compare. Weekly results only add value if they are more than noise.</p>
+</section>
+<section id="b10-which-weeks-drought-map-goes-with-which-week" class="level3">
+<h3 class="anchored" data-anchor-id="b10-which-weeks-drought-map-goes-with-which-week">B10 · Which week’s drought map goes with which week</h3>
+<p><code>Decision</code> · Priority <strong>Low</strong> · <strong>Same week’s map</strong></p>
+<p><strong>In short:</strong> Each MMWR week gets the Drought Monitor map dated on its Tuesday. That map reflects conditions up to that Tuesday, so it doesn’t strictly come before all of the week’s cases.</p>
+<p><strong>Ways forward:</strong> - [ ] Optional: use the previous week’s map, which is the same as using <code>usdm_dsci_lag1</code>. With the lag columns already in the dataset, this barely matters.</p>
+<hr>
+</section>
+</section>
+<section id="weather-humidity-and-drought-the-exposures" class="level2">
+<h2 class="anchored" data-anchor-id="weather-humidity-and-drought-the-exposures">3. Weather, humidity and drought (the exposures)</h2>
+<section id="b6-area-averaged-weather-vs-where-people-live" class="level3">
+<h3 class="anchored" data-anchor-id="b6-area-averaged-weather-vs-where-people-live">B6 · Area-averaged weather vs where people live</h3>
+<p><code>Decision</code> · Priority <strong>Medium</strong> · <strong>Area averages</strong></p>
+<p><strong>In short:</strong> County values average over the whole county, including mountains and desert where nobody lives. Most people, and most cases, are in valleys and towns.</p>
+<p><strong>Details:</strong> Large, mixed counties are the worst affected: San Bernardino, Kern, Riverside, Inyo, Fresno and Tulare. Mean temperature in San Bernardino mixes the Mojave Desert with mountain peaks above 3,000 m.</p>
+<p><strong>Options:</strong> - Keep area averages. This is simple and standard. - <strong>Population-weighted averages:</strong> weight each grid cell by the people living in it, using Census block populations or a gridded population product. This is the best match to exposure. It is easy for gridMET (the cells are already in hand), but NOAA gives only county averages, so temperature would have to come from gridMET or from NOAA’s gridded files. - Use only cells below an elevation cutoff (e.g.&nbsp;1,000 m). This is simpler and gets most of the benefit.</p>
+<p><strong>Ways forward:</strong> - [ ] For 3–4 large counties, compare area-weighted and population-weighted gridMET temperature. If they differ a lot, switch.</p>
+</section>
+<section id="l3-gridmet-county-averages-use-only-cells-centered-in-the-county" class="level3">
+<h3 class="anchored" data-anchor-id="l3-gridmet-county-averages-use-only-cells-centered-in-the-county">L3 · gridMET county averages use only cells centered in the county</h3>
+<p><code>Limitation</code> · Priority <strong>Low</strong> · <strong>Accepted</strong></p>
+<p><strong>In short:</strong> A grid cell counts toward a county only if its center is inside the county, and all counted cells are weighted equally. Cells along the county edges are left out.</p>
+<p><strong>Details:</strong> - Cells are 1/24°, about 3.7 × 4.6 km (17 km²) at Bay Area latitudes. - San Francisco (122.5 km² of land) gets 6 cells. Together they cover about 76% of its land. Another 15 cells overlap its edges (Ocean Beach, the Presidio, the waterfront, the islands) but are left out. - Large counties have hundreds to thousands of cells (median 234, San Bernardino 2,939), so there it makes no practical difference. - On a test day, SF’s edge cells had humidity values in the same range as its six inside cells.</p>
+<p><strong>Ways forward:</strong> - [ ] Optional: weight each cell by its overlap with the county (<code>county_means</code> in <code>src/download_gridmet.py</code>). This needs the gridMET download to be rerun. It is worth doing if B6’s population weighting is done, since both change the same function.</p>
+</section>
+<section id="b8-partial-weeks-at-the-end-of-the-series" class="level3">
+<h3 class="anchored" data-anchor-id="b8-partial-weeks-at-the-end-of-the-series">B8 · Partial weeks at the end of the series</h3>
+<p><code>Decision</code> · Priority <strong>Low</strong> · <strong>Sums the days present</strong></p>
+<p><strong>In short:</strong> The last week can have fewer than 7 days of weather, which makes its precipitation total too low.</p>
+<p><strong>Now:</strong> <code>n_days</code> counts the days with weather. A week with no precipitation values gets a blank total, but a week missing some days sums only the days present. In the current build this affects one week: 2026 week 39 has 3 of 7 days.</p>
+<p><strong>Ways forward:</strong> - [ ] Blank <code>prcp_total</code> (or the whole row’s weather) when <code>n_days &lt; 7</code>, or scale it up to 7 days. This is a few lines in <code>bd.weekly_weather</code>. Moot if B1 drops recent weeks.</p>
+</section>
+<section id="b9-preliminary-weather-data" class="level3">
+<h3 class="anchored" data-anchor-id="b9-preliminary-weather-data">B9 · Preliminary weather data</h3>
+<p><code>Decision</code> · Priority <strong>Low</strong> · <strong>Used</strong></p>
+<p><strong>In short:</strong> NOAA’s latest month is preliminary and gridMET’s latest days are provisional. Both get revised.</p>
+<p><strong>Now:</strong> Used as-is. Preliminary NOAA months are cached as <code>YYYYMM_prelim.csv</code> and refetched on each run until they become final. The download log shows when each file was pulled.</p>
+<p><strong>Ways forward:</strong> - [ ] Add an <code>is_prelim</code> column to the dataset from the cache file names. - [ ] Or simply stop fitting at the last complete season (B1). The current season’s weather then only matters for prediction.</p>
+</section>
+<section id="l4-temperature-and-humidity-come-from-different-gridded-products" class="level3">
+<h3 class="anchored" data-anchor-id="l4-temperature-and-humidity-come-from-different-gridded-products">L4 · Temperature and humidity come from different gridded products</h3>
+<p><code>Limitation</code> · Priority <strong>Low</strong> · <strong>Accepted</strong></p>
+<p><strong>In short:</strong> Temperature and precipitation come from NOAA nClimGrid, while humidity and VPD come from gridMET. Both are interpolated from weather stations, but with different methods.</p>
+<p><strong>Details:</strong> - VPD depends on temperature, so gridMET’s VPD reflects gridMET’s temperature, not NOAA’s. - In mountains and remote desert, where stations are sparse, both products are less certain.</p>
+<p><strong>Ways forward:</strong> - [ ] Download gridMET temperature (<code>tmmx</code>, <code>tmmn</code>; two more variables in the same download) and compare it with NOAA for a few counties. - [ ] If they agree well, consider taking all weather from gridMET. That would also make B6’s population weighting possible for temperature.</p>
+</section>
+<section id="l5-the-drought-monitor-is-a-judged-stepwise-product" class="level3">
+<h3 class="anchored" data-anchor-id="l5-the-drought-monitor-is-a-judged-stepwise-product">L5 · The Drought Monitor is a judged, stepwise product</h3>
+<p><code>Limitation</code> · Priority <strong>Low</strong> · <strong>Accepted</strong></p>
+<p><strong>In short:</strong> Drought Monitor categories are set each week by authors, who blend several indicators with local reports. They are not a measurement.</p>
+<p><strong>Details:</strong> - Values change in steps and can stay flat for months. - Category lines are drawn at a regional scale, so a county’s percentages may not reflect local water conditions. - How the raw values work: - Each raw column is cumulative (“this category or worse”), e.g.&nbsp;D1 = % in D1–D4. - The pipeline turns these into exact shares (<code>usdm_d0</code>–<code>usdm_d4</code>), the share in drought (<code>usdm_d1plus</code>) and the DSCI (0–500).</p>
+<p><strong>Ways forward:</strong> - [ ] Optional: add a measured drought index such as SPI or SPEI over 3, 6 or 12 months, from gridMET precipitation and evaporation. This is smoother and has a clear definition.</p>
+<hr>
+</section>
+</section>
+<section id="population-the-denominator" class="level2">
+<h2 class="anchored" data-anchor-id="population-the-denominator">4. Population (the denominator)</h2>
+<section id="b7-jump-at-20192020-population-changes-in-yearly-steps" class="level3">
+<h3 class="anchored" data-anchor-id="b7-jump-at-20192020-population-changes-in-yearly-steps">B7 · Jump at 2019→2020; population changes in yearly steps</h3>
+<p><code>Decision</code> · Priority <strong>Medium</strong> · <strong>Accepted for now</strong></p>
+<p><strong>In short:</strong> Population for 2010–2019 and for 2020 onward come from estimate series based on different censuses, so there is an artificial jump between 2019 and 2020. Population also changes only once a year.</p>
+<p><strong>Details:</strong> - 2010–2019 comes from Vintage 2020, based on the 2010 census. 2020 onward comes from Vintage 2025, based on the 2020 census. - Most counties change by less than 1–2% between 2019 and 2020 (median 1.2%). - Some small counties jump a lot: | County | Change 2019→2020 | |—|—| | Trinity | +30.5% (12,337 → 16,099) | | Sierra | +9.0% | | Mono | −8.5% | | Alpine | +6.0% | | Inyo, Lake, Lassen, Mendocino | +5–6% | - Most of these counties have few or no cases (Trinity, Sierra, Alpine and Lassen have none), so the effect on results is small.</p>
+<p><strong>Ways forward:</strong> - [ ] Accept it and note it. Simplest. - [ ] Or sum the 2010–2020 intercensal age/sex/race file to county totals. This spreads the census correction smoothly over 2010–2019. It needs a new step in <code>download_population.py</code>. - [ ] Interpolate between July 1 estimates to remove the steps each January. This matters little for a model with a population offset.</p>
+</section>
+<section id="l6-2026-reuses-the-2025-population" class="level3">
+<h3 class="anchored" data-anchor-id="l6-2026-reuses-the-2025-population">L6 · 2026 reuses the 2025 population</h3>
+<p><code>Limitation</code> · Priority <strong>Low</strong> · <strong>Flagged</strong></p>
+<p><strong>In short:</strong> The newest Census estimate is for 2025, so 2026 rows reuse it (<code>pop_carried_forward = True</code>).</p>
+<p><strong>Ways forward:</strong> - [ ] Add the Vintage 2026 file to <code>config.CENSUS_POP_URLS</code> when Census releases it (usually in spring), then rerun <code>download_population</code>.</p>
+<hr>
+</section>
+</section>
+<section id="scope-model-and-missing-variables" class="level2">
+<h2 class="anchored" data-anchor-id="scope-model-and-missing-variables">5. Scope, model and missing variables</h2>
+<section id="b5-which-weeks-of-the-year-and-which-counties" class="level3">
+<h3 class="anchored" data-anchor-id="b5-which-weeks-of-the-year-and-which-counties">B5 · Which weeks of the year and which counties</h3>
+<p><code>Decision</code> · Priority <strong>High</strong> · <strong>All weeks, all 58 counties</strong></p>
+<p><strong>In short:</strong> 95.7% of county-weeks have 0 cases. Most of those zeros are winter weeks or counties that never have cases, and they could dominate the model.</p>
+<p><strong>Details:</strong> - Eight counties have never had a reported case: Alpine, Del Norte, Lassen, Mariposa, Plumas, San Benito, Sierra and Trinity. - Small counties produce extreme weekly incidence: Glenn (population about 28,000) has 14.4 per 100,000 from 4 cases in one week, and Alpine has about 1,100 people.</p>
+<p><strong>Options:</strong> | Option | Pro | Con | |—|—|—| | Keep everything, use a zero-inflated model (B11) | No data dropped | Harder to interpret | | Transmission season only, e.g.&nbsp;MMWR weeks 18–48 | Removes structural winter zeros | Cuts the weeks 46–52 reporting tail (A2) | | High-burden counties only (the 2024 study used 11) | Stable rates, clear signal | Results don’t apply statewide | | Drop counties with 0 cases ever | Removes counties that can’t inform the model | Small loss |</p>
+<p><strong>Ways forward:</strong> - [ ] Main analysis: season weeks only, counties with at least one case. Sensitivity analysis: all weeks and all counties.</p>
+</section>
+<section id="b11-which-statistical-model" class="level3">
+<h3 class="anchored" data-anchor-id="b11-which-statistical-model">B11 · Which statistical model</h3>
+<p><code>Decision</code> · Priority <strong>High</strong> · <strong>Not started</strong></p>
+<p><strong>In short:</strong> The README plans a negative binomial model with a log(population) offset. The right model depends on B4 and B5.</p>
+<p><strong>Things to account for:</strong> - the many zeros (B5); - counts that vary more than a Poisson model allows; - correlation from week to week within a county; - differences between counties and between years (L2, L7).</p>
+<p><strong>Options used for California WNV:</strong> - negative binomial with county and year effects; - zero-inflated negative binomial; - negative binomial GEE with AR(1) correlation within county (the 2024 study); - distributed lag non-linear models (B3).</p>
+<p><strong>Ways forward:</strong> - [ ] Settle B4 and B5 first. - [ ] Start with negative binomial + offset + county and year effects + a few chosen lags. Check the residuals for leftover autocorrelation before adding complexity.</p>
+</section>
+<section id="a7-mosquito-and-bird-surveillance-possible-new-source" class="level3">
+<h3 class="anchored" data-anchor-id="a7-mosquito-and-bird-surveillance-possible-new-source">A7 · Mosquito and bird surveillance (possible new source)</h3>
+<p><code>Question</code> · Priority <strong>Medium</strong> · <strong>Not added</strong></p>
+<p><strong>In short:</strong> Mosquito infection rates and dead-bird positives are usually the strongest short-term predictors of human WNV, and they sit between weather and human cases in the causal chain.</p>
+<p><strong>Details:</strong> VectorSurv (vectorsurv.org) holds California mosquito pool tests and dead-bird results by county and week.</p>
+<p><strong>Why it matters:</strong> Adding them changes the question: from “does weather predict cases?” to “does weather predict cases beyond what surveillance already shows?”</p>
+<p><strong>Ways forward:</strong> - [ ] Find out whether access needs a data request and what the terms of use are. - [ ] Decide whether surveillance is an outcome, a predictor, or a mediator (a step in the chain between weather and cases) in the analysis.</p>
+</section>
+<section id="l7-important-drivers-arent-in-the-data" class="level3">
+<h3 class="anchored" data-anchor-id="l7-important-drivers-arent-in-the-data">L7 · Important drivers aren’t in the data</h3>
+<p><code>Limitation</code> · Priority <strong>Medium</strong> · <strong>Accepted</strong></p>
+<p><strong>In short:</strong> Many things besides weather change WNV risk, and none of them are in the dataset.</p>
+<p><strong>Examples:</strong> - <strong>Mosquito control:</strong> abatement district activity, aerial spraying in outbreak years. - <strong>Bird immunity:</strong> after big outbreak years, more birds are immune, which can damp the following years. WNV reached California in 2003–2004. - <strong>Mosquito habitat:</strong> - irrigation and rice fields; - urban drainage; - neglected swimming pools, e.g.&nbsp;during the 2007–2008 foreclosure wave in Bakersfield. - <strong>Human behavior and housing:</strong> time outdoors, air conditioning, window screens. - <strong>Population immunity and age structure:</strong> older people are more likely to get neuroinvasive disease. - <strong>Changes in testing and reporting</strong> (L2).</p>
+<p><strong>Why it matters:</strong> Weather effects estimated without these can be biased when the missing drivers vary with weather or over time.</p>
+<p><strong>Ways forward:</strong> - [ ] Include county effects (stable local differences) and year effects (statewide shocks such as bird immunity or reporting changes) in the model. - [ ] Add available proxies if useful: the previous season’s case count (immunity), land cover or irrigated area, and median age. - [ ] Name the rest as limitations in any write-up.</p>
+</section>
+<section id="l8-county-level-associations-not-individual-risk" class="level3">
+<h3 class="anchored" data-anchor-id="l8-county-level-associations-not-individual-risk">L8 · County-level associations, not individual risk</h3>
+<p><code>Limitation</code> · Priority <strong>Medium</strong> · <strong>Accepted</strong></p>
+<p><strong>In short:</strong> The data link county-level weather to county-level case counts. That shows how weather relates to <em>how many</em> cases a county has, not how weather affects any one person’s risk.</p>
+<p><strong>Why it matters:</strong> Associations at the county level can differ from those at the individual level (the ecological fallacy). This is mainly about how conclusions are worded.</p>
+<p><strong>Ways forward:</strong> - [ ] Phrase results as county-level relationships, e.g.&nbsp;“weeks that are 1 °C warmer are followed by X% more reported cases”.</p>
+</section>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
